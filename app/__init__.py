@@ -31,9 +31,17 @@ def create_app():
     
     # Database URL Handling
     db_url = os.getenv('DATABASE_URL')
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    if db_url and db_url.startswith("postgres"):
+        # Handle Postgres URL compatibility
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        # Force SSL for Railway production
+        if "sslmode" not in db_url and os.getenv('RAILWAY_ENVIRONMENT'):
+            separator = "&" if "?" in db_url else "?"
+            db_url += f"{separator}sslmode=require"
+            
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
+
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
