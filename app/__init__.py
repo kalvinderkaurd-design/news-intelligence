@@ -1,42 +1,45 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
+from authlib.integrations.flask_client import OAuth
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 import os
 from app.models import db, User
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
 def create_app():
+    """Application Factory for the News Intelligence Platform."""
     app = Flask(__name__)
     
-    # Handle proxy headers for HTTPS on Railway
+    # Trust proxy headers (Required for HTTPS on Railway/Heroku)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
-    # Configuration
+    # --- Configuration ---
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Session security for production
+    # Database URL Handling
+    db_url = os.getenv('DATABASE_URL')
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
+
+    # Security Settings
     app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    
-    db_url = os.getenv('DATABASE_URL')
-    if not db_url:
-        raise RuntimeError("DATABASE_URL not found in .env. Please set it to a PostgreSQL connection string.")
-    
-    # Handle Postgres URL compatibility (postgres:// vs postgresql://)
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Initialize extensions
+    # --- Initialize Extensions ---
     db.init_app(app)
+    Migrate(app, db)
     
-    from authlib.integrations.flask_client import OAuth
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+
     oauth = OAuth(app)
     google = oauth.register(
         name='google',
@@ -47,24 +50,16 @@ def create_app():
     )
     app.extensions['google_oauth'] = google
 
-    
-    from flask_migrate import Migrate
-    login_manager = LoginManager()
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = None
-    login_manager.init_app(app)
-    migrate = Migrate(app, db)
-
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # Register blueprints
+    # --- Register Blueprints ---
     from app.routes import auth_bp, main_bp, api_bp
-
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
 
     return app
+
 
