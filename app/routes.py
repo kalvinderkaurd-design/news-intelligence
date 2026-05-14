@@ -55,7 +55,9 @@ def terms():
 @auth_bp.route('/login/google')
 def login_google():
     google = current_app.extensions['google_oauth']
-    return google.authorize_redirect(url_for('auth.callback', _external=True))
+    redirect_uri = url_for('auth.callback', _external=True, _scheme='https')
+    print(f"DEBUG: Starting OAuth with redirect_uri: {redirect_uri}")
+    return google.authorize_redirect(redirect_uri)
 
 @auth_bp.route('/logout')
 @login_required
@@ -67,6 +69,7 @@ def logout():
 def callback():
     try:
         google = current_app.extensions['google_oauth']
+        # Authlib will automatically use the correct redirect_uri from session
         token = google.authorize_access_token()
         user_info = google.get('userinfo').json()
         email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('id')
