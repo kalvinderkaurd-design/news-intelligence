@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="article-container">
+    <a href="{{ url_for('main.index') }}" style="color: var(--text-muted); text-decoration: none; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; font-weight: 700; transition: var(--transition-base); font-size: 0.95rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Global Intelligence
+    </a>
+    
+    <header class="article-header" style="margin-bottom: 2.5rem;">
+        <span class="article-category" style="margin-bottom: 0.8rem;">{{ article.category.split(',')[0] if article.category else 'General Intelligence' }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 3rem; margin-top: 0.5rem;">
+            <h1 class="article-title-main" style="flex: 1; font-size: 2.5rem; line-height: 1.2;">{{ article.title }}</h1>
+            <button id="save-btn-{{ article.id }}" onclick="toggleSave({{ article.id }})" 
+                    class="glass save-btn {{ 'active' if is_saved else '' }}" 
+                    style="width: 50px; height: 50px; border-radius: 14px; cursor: pointer; border: 1px solid {{ 'var(--warning)' if is_saved else 'var(--border-strong)' }}; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; transition: var(--transition-smooth); flex-shrink: 0; color: {{ 'var(--warning)' if is_saved else 'var(--text-heading)' }};">
+                <i class="{{ 'fa-solid' if is_saved else 'fa-regular' }} fa-bookmark"></i>
+            </button>
+        </div>
+        <div class="article-meta-bar" style="padding: 1rem 0; margin-bottom: 2rem;">
+            <span style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-solid fa-globe" style="color: var(--primary); font-size: 1rem;"></i> <strong>{{ article.source }}</strong></span>
+            <span style="display: flex; align-items: center; gap: 0.6rem;"><i class="fa-regular fa-calendar-check" style="font-size: 1rem;"></i> {{ article.published_at.strftime('%B %d, %Y') }}</span>
+        </div>
+    </header>
+
+    <!-- AI Intelligence Grid -->
+    <div class="intelligence-grid" style="margin: 2.5rem 0;">
+        <div class="ai-card" style="grid-column: 1 / -1; border: 1px solid var(--border-light); background: linear-gradient(135deg, #ffffff, var(--bg-secondary)); padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 1rem;">
+                <h3 class="ai-card-title" style="margin: 0; font-size: 1.3rem;"><i class="fa-solid fa-sparkles" style="color: var(--primary);"></i> Neural Insight Engine</h3>
+                <div id="ai-sentiment-badge"></div>
+            </div>
+
+            <div id="ai-loading" style="text-align: center; padding: 2rem 0;">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--bg-secondary); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;"></div>
+                <p style="margin-top: 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">Synthesizing Intelligence...</p>
+            </div>
+            
+            <div id="ai-content" style="display: none; animation: fadeIn 0.6s ease-out;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 3rem;">
+                    <div>
+                        <h4 style="margin-bottom: 1rem; font-size: 0.8rem; text-transform: uppercase; color: var(--primary); letter-spacing: 0.15em; font-weight: 800; display: flex; align-items: center; gap: 0.6rem;">
+                            <i class="fa-solid fa-file-lines"></i> Executive Summary
+                        </h4>
+                        <p id="ai-summary" style="font-size: 1.1rem; color: var(--text-heading); font-weight: 500; line-height: 1.6;"></p>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 1rem; font-size: 0.8rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.15em; font-weight: 800; display: flex; align-items: center; gap: 0.6rem;">
+                            <i class="fa-solid fa-bolt"></i> Strategic Key Points
+                        </h4>
+                        <ul id="ai-insights" style="list-style: none; padding: 0;"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Content -->
+    {% if article.image_url %}
+    <div style="position: relative; overflow: hidden; border-radius: var(--radius-lg); margin-bottom: 3rem;">
+        <img src="{{ article.image_url }}" alt="{{ article.title }}" class="article-hero-img" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'" style="margin-bottom: 0; height: 400px;">
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 30%; background: linear-gradient(to top, rgba(0,0,0,0.3), transparent); pointer-events: none;"></div>
+    </div>
+    {% endif %}
+
+    <div class="article-content-body" style="font-size: 1.15rem; line-height: 1.7;">
+        {{ article.content | safe }}
+    </div>
+
+    <div style="margin: 4rem 0; text-align: center; padding-top: 2rem; border-top: 1px solid var(--border-strong);">
+        <a href="{{ article.article_url }}" target="_blank" style="color: var(--primary); font-weight: 800; font-size: 1.1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: var(--transition-base);" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            See complete news <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.9rem;"></i>
+        </a>
+    </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+#ai-insights li {
+    padding: 1rem 0 1rem 2.5rem;
+    position: relative;
+    font-weight: 600;
+    color: var(--text-heading);
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--border-light);
+}
+#ai-insights li:last-child { border-bottom: none; }
+#ai-insights li::before {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    position: absolute;
+    left: 0.5rem;
+    color: var(--success);
+    font-weight: 900;
+    font-size: 0.9rem;
+    background: #ecfdf5;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const articleId = {{ article.id }};
+        fetch(`/api/analyze/${articleId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('ai-loading').style.display = 'none';
+                document.getElementById('ai-content').style.display = 'block';
+                document.getElementById('ai-summary').innerText = data.summary;
+                
+                const sentimentBadge = document.getElementById('ai-sentiment-badge');
+                let sentimentLabel = data.sentiment.toUpperCase();
+                let impactClass = "sentiment-neutral";
+                let icon = "fa-circle-info";
+                
+                if (data.sentiment.toLowerCase() === 'positive') {
+                    impactClass = "sentiment-positive";
+                    icon = "fa-chart-line";
+                } else if (data.sentiment.toLowerCase() === 'negative') {
+                    impactClass = "sentiment-negative";
+                    icon = "fa-triangle-exclamation";
+                }
+                
+                sentimentBadge.innerHTML = `<span class="sentiment-pill ${impactClass}"><i class="fa-solid ${icon}" style="margin-right: 0.6rem;"></i> ${sentimentLabel} IMPACT</span>`;
+                
+                const insightsList = document.getElementById('ai-insights');
+                insightsList.innerHTML = data.insights.map(i => `<li>${i}</li>`).join('');
+            })
+            .catch(err => {
+                document.getElementById('ai-loading').innerHTML = '<div style="padding: 2rem;"><i class="fa-solid fa-circle-exclamation" style="font-size: 2.5rem; color: var(--danger); margin-bottom: 1rem;"></i><p style="color: var(--danger); font-weight: 700; font-size: 1.1rem;">Analysis Engine Offline. Please try again later.</p></div>';
+            });
+    });
+
+    function toggleSave(id) {
+        const btn = document.getElementById(`save-btn-${id}`);
+        const icon = btn.querySelector('i');
+        fetch(`/api/save/${id}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'saved') {
+                    btn.classList.add('active');
+                    btn.style.color = 'var(--warning)';
+                    btn.style.borderColor = 'var(--warning)';
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid');
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = 'var(--text-heading)';
+                    btn.style.borderColor = 'var(--border-strong)';
+                    icon.classList.remove('fa-solid');
+                    icon.classList.add('fa-regular');
+                }
+            });
+    }
+</script>
+
+<style>
+    .save-btn.active {
+        background: rgba(245, 158, 11, 0.05) !important;
+    }
+</style>
+{% endblock %}

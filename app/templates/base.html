@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Intelligence Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    {% if request.endpoint not in ['auth.login', 'main.article_detail'] %}
+    <nav class="navbar glass" style="padding: 0.5rem 2.5rem;">
+        <div style="display: flex; align-items: center; gap: 3rem; flex: 1;">
+            <a href="{{ url_for('main.index') }}" class="nav-logo" style="font-size: 1.3rem;">News  Intelligence  Platform</a>
+            
+            <div class="nav-links" style="gap: 0.5rem;">
+                <a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' else '' }}">
+                    Dashboard
+                </a>
+                <a href="{{ url_for('main.saved_articles') }}" class="{{ 'active' if request.endpoint == 'main.saved_articles' else '' }}">
+                    Saved
+                </a>
+                <a href="{{ url_for('main.ask_ai') }}" class="{{ 'active' if request.endpoint == 'main.ask_ai' else '' }}">
+                    Ask AI
+                </a>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            {% if current_user.is_authenticated %}
+                <div style="display: flex; align-items: center; gap: 0.8rem; color: var(--text-heading); font-weight: 700; font-size: 0.9rem;">
+                    {% if current_user.profile_pic %}
+                        <img src="{{ current_user.profile_pic }}" alt="{{ current_user.username }}" 
+                             style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    {% endif %}
+                    {{ current_user.username }}
+                </div>
+                <a href="{{ url_for('auth.logout') }}" style="color: var(--text-muted); font-weight: 700; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 10px; transition: var(--transition-base);" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'">
+                    Logout
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-primary" style="padding: 0.6rem 1.5rem; color: white;">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

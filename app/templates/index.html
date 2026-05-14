@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header" style="margin-bottom: 3rem; text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; gap: 2rem;">
+            <div class="search-container" style="flex: 1; max-width: 600px; margin: 0;">
+                <form action="{{ url_for('main.index') }}" method="GET" style="position: relative;">
+                    <i class="fa-solid fa-magnifying-glass"
+                        style="position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: var(--text-dim);"></i>
+                    <input type="text" name="search" placeholder="Search insights..."
+                        value="{{ request.args.get('search', '') }}"
+                        style="width: 100%; padding: 1rem 1rem 1rem 3.5rem; border-radius: 14px; border: 1px solid var(--border-light); background: var(--glass-bg); font-family: inherit; font-weight: 500; transition: var(--transition-base);">
+                </form>
+            </div>
+
+            <button onclick="refreshNews()" id="refresh-btn" class="glass"
+                style="padding: 1rem 2rem; border-radius: 14px; display: flex; align-items: center; gap: 0.8rem; font-weight: 700; color: var(--primary); border: 1px solid var(--border-strong); cursor: pointer;">
+                <i class="fa-solid fa-rotate"></i> Refresh Intelligence
+            </button>
+        </div>
+    </div>
+
+    <div
+        style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.8rem; color: var(--text-dim); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em;">
+        <i class="fa-solid fa-lightbulb" style="color: var(--warning);"></i>
+        <span>Click on the news cards to view AI summary and strategic insights</span>
+    </div>
+
+    <!-- News Feed -->
+    <div class="news-feed" id="news-feed">
+        {% for article in articles %}
+        <div class="news-card" onclick="openArticle('{{ article.id }}')">
+            <div class="card-image-wrapper">
+                {% if article.image_url and article.image_url != 'undefined' and article.image_url != 'None' %}
+                <img src="{{ article.image_url }}" alt="{{ article.title }}" class="card-image"
+                    referrerpolicy="no-referrer"
+                    onerror="this.src='https://images.unsplash.com/photo-1585829365234-78d9b6887481?q=80&w=2070&auto=format&fit=crop'">
+                {% else %}
+                <div
+                    style="width: 100%; height: 100%; background: var(--bg-secondary); display: flex; justify-content: center; align-items: center;">
+                    <i class="fa-solid fa-newspaper" style="font-size: 3rem; color: var(--primary); opacity: 0.1;"></i>
+                </div>
+                {% endif %}
+                <div class="card-overlay"></div>
+                <span class="card-badge">{{ article.category.split(',')[0] if article.category else 'General' }}</span>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">{{ article.title }}</h3>
+                <div class="card-meta">
+                    <span class="source-tag"><i class="fa-solid fa-globe"></i> {{ article.source }}</span>
+                    <span><i class="fa-regular fa-calendar" style="margin-right: 0.3rem;"></i> {{
+                        article.published_at.strftime('%b %d, %Y') }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('main.index', page=pagination.prev_num, search=request.args.get('search', '')) }}"
+            class="pagination-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+        <a href="{{ url_for('main.index', page=page_num, search=request.args.get('search', '')) }}"
+            class="pagination-btn {{ 'active' if page_num == pagination.page else '' }}">{{ page_num }}</a>
+        {% else %}
+        <span style="color: var(--text-muted); align-self: center; padding: 0 0.5rem;">•••</span>
+        {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="{{ url_for('main.index', page=pagination.next_num, search=request.args.get('search', '')) }}"
+            class="pagination-btn">
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function refreshNews() {
+        const btn = document.getElementById('refresh-btn');
+        const icon = btn.querySelector('i');
+        icon.classList.add('fa-spin');
+        btn.disabled = true;
+
+        fetch('/api/refresh-news', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                location.reload();
+            })
+            .finally(() => {
+                icon.classList.remove('fa-spin');
+                btn.disabled = false;
+            });
+    }
+
+    function openArticle(id) {
+        window.location.href = `/article/${id}`;
+    }
+</script>
+{% endblock %}

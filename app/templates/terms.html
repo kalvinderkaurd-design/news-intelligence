@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="article-container" style="max-width: 800px; margin: 4rem auto; animation: fadeIn 0.8s ease-out;">
+    <a href="{{ url_for('auth.login') }}" style="color: var(--text-muted); text-decoration: none; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Login
+    </a>
+    
+    <div class="ai-card" style="padding: 4rem;">
+        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 2rem; color: var(--text-heading);">Project Disclaimer & Terms</h1>
+        
+        <div style="font-size: 1.1rem; line-height: 1.8; color: var(--text-body);">
+            <p style="margin-bottom: 1.5rem; font-weight: 600; color: var(--primary);">
+                <i class="fa-solid fa-triangle-exclamation"></i> IMPORTANT NOTICE:
+            </p>
+            
+            <p style="margin-bottom: 1.5rem;">
+                This website, <strong>NEWS INTEL</strong>, is a <strong>non-professional, personal development project</strong> created for educational and demonstration purposes only. 
+            </p>
+
+            <h3 style="margin: 2rem 0 1rem; color: var(--text-heading);">1. Not a Professional Service</h3>
+            <p style="margin-bottom: 1.5rem;">
+                The platform is not intended for commercial use or as a reliable source of professional news intelligence. The data provided (news articles, AI summaries, and analysis) may be inaccurate, delayed, or incomplete.
+            </p>
+
+            <h3 style="margin: 2rem 0 1rem; color: var(--text-heading);">2. Data Privacy</h3>
+            <p style="margin-bottom: 1.5rem;">
+                We use Google OAuth for authentication to simplify the login process. While we take basic precautions, please do not use sensitive information. This project is not a production-grade application and does not guarantee the security of your data.
+            </p>
+
+            <h3 style="margin: 2rem 0 1rem; color: var(--text-heading);">3. No Liability</h3>
+            <p style="margin-bottom: 1.5rem;">
+                The creator of this project is not liable for any decisions made based on the information presented here. By using this project, you acknowledge its status as a demonstration prototype.
+            </p>
+
+            <div style="margin-top: 4rem; padding: 2rem; background: var(--bg-secondary); border-radius: 20px; border-left: 5px solid var(--primary);">
+                <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin: 0;">
+                    Thank you for checking out my project!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

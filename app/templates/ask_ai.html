@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="chat-wrapper"
+    style="height: calc(100vh - 120px); display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; position: relative;">
+
+    <!-- Chat Messages Area -->
+    <div id="chat-messages"
+        style="flex: 1; overflow-y: auto; padding: 2rem 1rem; display: flex; flex-direction: column; gap: 2rem;">
+        {% if history %}
+        {% for msg in history %}
+        <div class="message-container {{ 'user-msg' if msg.role == 'user' else 'ai-msg' }}"
+            style="display: flex; gap: 1rem; align-items: flex-start; max-width: 85%;">
+            <div class="bubble glass"
+                style="padding: 1rem 1.5rem; border-radius: 20px; font-size: 1.05rem; line-height: 1.6; color: var(--text-body); border: 1px solid var(--border-light);">
+                <div
+                    style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.4rem; opacity: 0.5;">
+                    {{ 'You' if msg.role == 'user' else 'News Intel AI' }}
+                </div>
+                {{ msg.content }}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div id="empty-state" style="text-align: center; margin-top: 5rem; opacity: 0.5;">
+            <h3 style="font-weight: 800; font-size: 2rem; color: var(--text-heading); margin-bottom: 0.5rem;">Start a
+                conversation</h3>
+            <p>Ask anything about the latest news intelligence.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Input Area -->
+    <div style="padding: 2rem 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div class="chat-disclaimer"
+                style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-dim); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>This AI does not maintain conversational context between messages.</span>
+            </div>
+            <button id="clear-history-btn" class="glass"
+                style="padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); border: 1px solid var(--border-light); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition-base);">
+                <i class="fa-solid fa-trash-can"></i> Clear History
+            </button>
+        </div>
+
+        <div class="glass"
+            style="padding: 0.8rem; border-radius: 24px; border: 1px solid var(--border-strong); display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-float);">
+            <textarea id="ai-input" placeholder="Ask anything about the news..."
+                style="flex: 1; background: transparent; border: none; outline: none; padding: 0.8rem 1rem; font-family: inherit; font-size: 1.1rem; resize: none; color: var(--text-body); max-height: 150px;"
+                rows="1"></textarea>
+            <button id="send-btn" class="btn-primary"
+                style="width: 50px; height: 50px; border-radius: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: var(--transition-base);">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes slideInRight {
+        from {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .message-container {
+        animation-duration: 0.3s;
+        animation-fill-mode: both;
+    }
+
+    .user-msg {
+        animation-name: slideInRight;
+        align-self: flex-end;
+    }
+
+    .user-msg .bubble {
+        background: var(--primary-glow) !important;
+    }
+
+    .ai-msg {
+        animation-name: slideInLeft;
+        align-self: flex-start;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('ai-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const clearBtn = document.getElementById('clear-history-btn');
+
+        const scrollBottom = () => {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        scrollBottom();
+
+        // Auto-resize textarea
+        input.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        const createMessageHtml = (role, content, sources = []) => {
+            const isUser = role === 'user';
+            const label = isUser ? 'You' : 'News Intel AI';
+
+            let sourcesHtml = '';
+            if (!isUser && sources.length > 0) {
+                sourcesHtml = `
+                <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--border-light); display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; width: 100%; opacity: 0.4; margin-bottom: 0.2rem;">Referenced Intelligence:</span>
+                    ${sources.map(s => `
+                        <a href="/article/${s.id}" class="glass" style="padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600; color: var(--primary); text-decoration: none; border: 1px solid var(--border-light); transition: var(--transition-base);">
+                            <i class="fa-solid fa-arrow-right"></i> ${s.title.substring(0, 30)}...
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+            }
+
+            return `
+            <div class="message-container ${isUser ? 'user-msg' : 'ai-msg'}" 
+                 style="display: flex; gap: 1rem; align-items: flex-start; max-width: 85%;">
+                <div class="bubble glass" style="padding: 1rem 1.5rem; border-radius: 20px; font-size: 1.05rem; line-height: 1.6; color: var(--text-body); border: 1px solid var(--border-light);">
+                    <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.4rem; opacity: 0.5;">${label}</div>
+                    ${content}
+                    ${sourcesHtml}
+                </div>
+            </div>
+        `;
+        };
+
+        const sendMessage = async () => {
+            const query = input.value.trim();
+            if (!query) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Remove empty state if present
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            // Add user message
+            chatMessages.insertAdjacentHTML('beforeend', createMessageHtml('user', query));
+            scrollBottom();
+
+            // Add loading
+            const loadingId = 'loading-' + Date.now();
+            chatMessages.insertAdjacentHTML('beforeend', `
+            <div id="${loadingId}" class="message-container ai-msg" style="display: flex; gap: 1rem; align-items: flex-start; max-width: 85%;">
+                <div class="bubble glass" style="padding: 1rem 1.5rem; border-radius: 20px; font-size: 1.05rem; line-height: 1.6; color: var(--text-body); border: 1px solid var(--border-light);">
+                    <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.4rem; opacity: 0.5;">News Intel AI</div>
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing Intelligence...
+                </div>
+            </div>
+        `);
+            scrollBottom();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await response.json();
+
+                document.getElementById(loadingId).remove();
+                chatMessages.insertAdjacentHTML('beforeend', createMessageHtml('assistant', data.answer, data.sources));
+                scrollBottom();
+            } catch (error) {
+                const loader = document.getElementById(loadingId);
+                if (loader) loader.innerHTML = '<div class="bubble glass" style="color: var(--danger);">Error connecting to intelligence service.</div>';
+            }
+        };
+
+        const clearChat = async () => {
+            if (!confirm('Clear all conversation history?')) return;
+            try {
+                const res = await fetch('/api/clear-chat', { method: 'POST' });
+                if (res.ok) {
+                    chatMessages.innerHTML = `
+                    <div id="empty-state" style="text-align: center; margin-top: 5rem; opacity: 0.5;">
+                        <h3 style="font-weight: 800; font-size: 2rem; color: var(--text-heading); margin-bottom: 0.5rem;">Start a conversation</h3>
+                        <p>Ask anything about the latest news intelligence.</p>
+                    </div>
+                `;
+                }
+            } catch (err) { console.error(err); }
+        };
+
+        sendBtn.addEventListener('click', sendMessage);
+        clearBtn.addEventListener('click', clearChat);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    });
+</script>
+{% endblock %}
