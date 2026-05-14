@@ -65,23 +65,29 @@ def logout():
 
 @auth_bp.route('/callback')
 def callback():
-    google = current_app.extensions['google_oauth']
-    token = google.authorize_access_token()
-    user_info = google.get('userinfo').json()
-    email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('id')
+    try:
+        google = current_app.extensions['google_oauth']
+        token = google.authorize_access_token()
+        user_info = google.get('userinfo').json()
+        email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('id')
 
-    user = User.query.filter_by(email=email).first()
-    picture = user_info.get('picture')
+        user = User.query.filter_by(email=email).first()
+        picture = user_info.get('picture')
+        
+        if not user:
+            user = User(username=name or email.split('@')[0], email=email, oauth_provider='google', oauth_id=google_id, profile_pic=picture)
+            db.session.add(user)
+        else:
+            user.profile_pic = picture
+        
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('main.index'))
     
-    if not user:
-        user = User(username=name or email.split('@')[0], email=email, oauth_provider='google', oauth_id=google_id, profile_pic=picture)
-        db.session.add(user)
-    else:
-        user.profile_pic = picture # Update picture if changed
-    
-    db.session.commit()
-    login_user(user)
-    return redirect(url_for('main.index'))
+    except Exception as e:
+        print(f"OAuth callback error: {e}")
+        flash('Login failed. Please try again.', 'error')
+        return redirect(url_for('auth.login'))
 
 # --- API Routes ---
 @api_bp.route('/analyze/<int:article_id>', methods=['POST'])
