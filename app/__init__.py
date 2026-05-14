@@ -1,3 +1,13 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from dotenv import load_dotenv
+import os
+from app.models import db, User
+
+load_dotenv()
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 def create_app():
     app = Flask(__name__)
     
@@ -13,6 +23,7 @@ def create_app():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Initialize extensions
