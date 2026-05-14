@@ -4,12 +4,15 @@ from flask_login import LoginManager
 from dotenv import load_dotenv
 import os
 from app.models import db, User
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 def create_app():
     app = Flask(__name__)
+    
+    # Handle proxy headers for HTTPS on Railway
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
@@ -23,7 +26,6 @@ def create_app():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Initialize extensions
@@ -65,3 +67,4 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
 
     return app
+
