@@ -70,10 +70,14 @@ def callback():
     try:
         google = current_app.extensions['google_oauth']
         token = google.authorize_access_token()
-        user_info = google.get('userinfo').json()
+        user_info = token.get('userinfo') # Get info directly from the ID token
+        
+        if not user_info:
+            # Fallback for some configurations
+            user_info = google.get('https://openidconnect.googleapis.com/v1/userinfo').json()
 
+        email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('sub') # Google uses 'sub' for ID
 
-        email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('id')
 
         user = User.query.filter_by(email=email).first()
         picture = user_info.get('picture')
