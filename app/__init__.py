@@ -19,13 +19,18 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Use SQLite for a fast, zero-config interview demo
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database/app.db'
-    
-    # Ensure the database directory exists
-    db_dir = os.path.join(app.root_path, '..', 'database')
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
+    # Database URL Handling
+    db_url = os.getenv('DATABASE_URL')
+    if db_url and db_url.startswith("postgres"):
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        if os.getenv('RAILWAY_ENVIRONMENT') and "sslmode" not in db_url:
+            separator = "&" if "?" in db_url else "?"
+            db_url += f"{separator}sslmode=require"
+            
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "connect_args": {"connect_timeout": 10}}
+
 
 
 

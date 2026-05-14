@@ -4,6 +4,11 @@ import os
 app = create_app()
 
 if __name__ == '__main__':
+    with app.app_context():
+        # This automatically creates your database tables on Railway
+        from app.models import db
+        db.create_all()
+        
     # Standard entry point for local development
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
