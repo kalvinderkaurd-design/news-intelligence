@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -17,7 +17,15 @@ def create_app():
     # Trust proxy headers (Required for HTTPS on Railway/Heroku)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
+    @app.before_request
+    def before_request():
+        # Force HTTPS in production
+        if not request.is_secure and os.getenv('RAILWAY_ENVIRONMENT'):
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)
+
     # --- Configuration ---
+
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
