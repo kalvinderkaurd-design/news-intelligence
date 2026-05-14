@@ -56,7 +56,6 @@ def terms():
 def login_google():
     google = current_app.extensions['google_oauth']
     redirect_uri = url_for('auth.callback', _external=True, _scheme='https')
-    print(f"DEBUG: Starting OAuth with redirect_uri: {redirect_uri}")
     return google.authorize_redirect(redirect_uri)
 
 @auth_bp.route('/logout')
@@ -70,14 +69,9 @@ def callback():
     try:
         google = current_app.extensions['google_oauth']
         token = google.authorize_access_token()
-        user_info = token.get('userinfo') # Get info directly from the ID token
+        user_info = token.get('userinfo')
         
-        if not user_info:
-            # Fallback for some configurations
-            user_info = google.get('https://openidconnect.googleapis.com/v1/userinfo').json()
-
-        email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('sub') # Google uses 'sub' for ID
-
+        email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('sub')
 
         user = User.query.filter_by(email=email).first()
         picture = user_info.get('picture')
@@ -93,9 +87,9 @@ def callback():
         return redirect(url_for('main.index'))
     
     except Exception as e:
-        print(f"OAuth callback error: {e}")
         flash('Login failed. Please try again.', 'error')
         return redirect(url_for('auth.login'))
+
 
 # --- API Routes ---
 @api_bp.route('/analyze/<int:article_id>', methods=['POST'])
