@@ -69,7 +69,9 @@ def callback():
     try:
         google = current_app.extensions['google_oauth']
         token = google.authorize_access_token()
-        user_info = google.get('userinfo').json()
+        # Use the absolute OpenID Connect userinfo endpoint
+        user_info = google.get('https://openidconnect.googleapis.com/v1/userinfo').json()
+
         
         email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('sub') or user_info.get('id')
 
@@ -88,8 +90,10 @@ def callback():
         return redirect(url_for('main.index'))
     
     except Exception as e:
+        print(f"DEBUG: OAuth callback failed with error: {str(e)}")
         flash('Login failed. Please try again.', 'error')
         return redirect(url_for('auth.login'))
+
 
 
 # --- API Routes ---
