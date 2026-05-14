@@ -90,9 +90,10 @@ def callback():
         return redirect(url_for('main.index'))
     
     except Exception as e:
-        print(f"DEBUG: OAuth callback failed with error: {str(e)}")
+        current_app.logger.error(f"OAuth callback failed: {str(e)}")
         flash('Login failed. Please try again.', 'error')
         return redirect(url_for('auth.login'))
+
 
 
 

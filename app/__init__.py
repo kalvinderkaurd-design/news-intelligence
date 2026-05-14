@@ -11,47 +11,30 @@ from app.models import db, User
 load_dotenv()
 
 def create_app():
-    """Application Factory for the News Intelligence Platform."""
+    """Application Factory."""
     app = Flask(__name__)
     
-    # Trust proxy headers (Required for HTTPS on Railway/Heroku)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    
-    @app.before_request
-    def before_request():
-        # Force HTTPS in production
-        if not request.is_secure and os.getenv('RAILWAY_ENVIRONMENT'):
-            url = request.url.replace('http://', 'https://', 1)
-            return redirect(url, code=301)
-
     # --- Configuration ---
-
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Database URL Handling
     db_url = os.getenv('DATABASE_URL')
-    if db_url and db_url.startswith("postgres"):
-        # Handle Postgres URL compatibility
-        if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql://", 1)
-        # Force SSL for Railway production
-        if "sslmode" not in db_url and os.getenv('RAILWAY_ENVIRONMENT'):
-            separator = "&" if "?" in db_url else "?"
-            db_url += f"{separator}sslmode=require"
-            
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
 
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    }
-
-
-    # Security Settings
-    app.config['SESSION_COOKIE_SECURE'] = True
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # --- Production Fixes (Hidden during local dev) ---
+    if os.getenv('RAILWAY_ENVIRONMENT'):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+        
+        @app.before_request
+        def force_https():
+            if not request.is_secure:
+                return redirect(request.url.replace('http://', 'https://', 1), code=301)
+        
+        if "sslmode" not in app.config['SQLALCHEMY_DATABASE_URI']:
+            app.config['SQLALCHEMY_DATABASE_URI'] += "?sslmode=require"
 
     # --- Initialize Extensions ---
     db.init_app(app)
@@ -75,17 +58,17 @@ def create_app():
     )
     app.extensions['google_oauth'] = google
 
-
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # --- Register Blueprints ---
+    # --- Blueprints ---
     from app.routes import auth_bp, main_bp, api_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
 
     return app
+
 
 
