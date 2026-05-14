@@ -69,9 +69,10 @@ def logout():
 def callback():
     try:
         google = current_app.extensions['google_oauth']
-        # Authlib will automatically use the correct redirect_uri from session
-        token = google.authorize_access_token()
+        redirect_uri = url_for('auth.callback', _external=True, _scheme='https')
+        token = google.authorize_access_token(redirect_uri=redirect_uri)
         user_info = google.get('userinfo').json()
+
         email, name, google_id = user_info.get('email'), user_info.get('name'), user_info.get('id')
 
         user = User.query.filter_by(email=email).first()

@@ -17,6 +17,11 @@ def create_app():
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-123')
     
+    # Session security for production
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    
     db_url = os.getenv('DATABASE_URL')
     if not db_url:
         raise RuntimeError("DATABASE_URL not found in .env. Please set it to a PostgreSQL connection string.")
@@ -37,16 +42,11 @@ def create_app():
         name='google',
         client_id=os.getenv('GOOGLE_CLIENT_ID'),
         client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-        access_token_url='https://accounts.google.com/o/oauth2/token',
-        access_token_params=None,
-        authorize_url='https://accounts.google.com/o/oauth2/auth',
-        authorize_params=None,
-        api_base_url='https://www.googleapis.com/oauth2/v1/',
-        userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
-        client_kwargs={'scope': 'openid email profile'},
-        jwks_uri="https://www.googleapis.com/oauth2/v3/certs"
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
     )
     app.extensions['google_oauth'] = google
+
     
     from flask_migrate import Migrate
     login_manager = LoginManager()
