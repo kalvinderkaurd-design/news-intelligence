@@ -26,6 +26,11 @@ def create_app():
     if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+
 
     # Security Settings
     app.config['SESSION_COOKIE_SECURE'] = True
@@ -45,10 +50,15 @@ def create_app():
         name='google',
         client_id=os.getenv('GOOGLE_CLIENT_ID'),
         client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
+        access_token_url='https://accounts.google.com/o/oauth2/token',
+        authorize_url='https://accounts.google.com/o/oauth2/auth',
+        api_base_url='https://www.googleapis.com/oauth2/v1/',
+        userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
+        client_kwargs={'scope': 'openid email profile'},
+        jwks_uri="https://www.googleapis.com/oauth2/v3/certs"
     )
     app.extensions['google_oauth'] = google
+
 
     @login_manager.user_loader
     def load_user(user_id):
