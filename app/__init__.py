@@ -19,11 +19,23 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db_url = os.getenv('DATABASE_URL')
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    if db_url and db_url.startswith("postgres"):
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+        # Smartly add sslmode=require for Railway
+        if os.getenv('RAILWAY_ENVIRONMENT') and "sslmode" not in db_url:
+            separator = "&" if "?" in db_url else "?"
+            db_url += f"{separator}sslmode=require"
+            
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database/app.db'
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "connect_args": {"connect_timeout": 10}
+    }
 
-    # --- Production Fixes (Hidden during local dev) ---
+    # --- Production Fixes (Required for Railway) ---
     if os.getenv('RAILWAY_ENVIRONMENT'):
         from werkzeug.middleware.proxy_fix import ProxyFix
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -32,9 +44,8 @@ def create_app():
         def force_https():
             if not request.is_secure:
                 return redirect(request.url.replace('http://', 'https://', 1), code=301)
-        
-        if "sslmode" not in app.config['SQLALCHEMY_DATABASE_URI']:
-            app.config['SQLALCHEMY_DATABASE_URI'] += "?sslmode=require"
+
+
 
     # --- Initialize Extensions ---
     db.init_app(app)
